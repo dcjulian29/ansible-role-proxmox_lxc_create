@@ -1,0 +1,89 @@
+---
+- name: Verify that python3-pip is installed on the Proxmox node
+  ansible.builtin.apt:
+    name: "python3-pip"
+    state: present
+  delegate_to: "{{ proxmox_api_host }}"
+
+- name: Verify if proxmoxer pip module is installed on the Proxmox node
+  ansible.builtin.pip:
+    name: proxmoxer
+    state: present
+  delegate_to: "{{ proxmox_api_host }}"
+
+- name: Download the container template if it needed
+  ansible.builtin.get_url:
+    url: "{{ proxmox_template_url }}"
+    dest: /tmp/
+    mode: "0644"
+  delegate_to: "{{ proxmox_api_host }}"
+  register: proxmox_download
+  when:
+    - proxmox_template_url | length > 0
+
+- name: "{{ 'Add LXC container template \"' + proxmox_template_name + '\" to ' + proxmox_api_host + ' if needed' }}"
+  community.general.proxmox_template:
+    api_host: "{{ proxmox_api_host }}"
+    api_password: "{{ proxmox_api_password }}"
+    api_user: "{{ proxmox_api_user }}"
+    content_type: "{{ proxmox_template_type }}"
+    node: "{{ proxmox_api_host }}"
+    src: "{{ proxmox_download.dest | default(omit) }}"
+    state: present
+    storage: "{{ proxmox_template_storage }}"
+    template: "{{ proxmox_template_name }}"
+
+- name: "{{ 'Create container named \"' + virtual_machine_name + '\"' }}"
+  community.general.proxmox:
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password }}"
+    api_host: "{{ proxmox_api_host }}"
+    cores: "{{ virtual_machine_cores }}"
+    description: |-
+      # This container is managed by Ansible
+
+      Don't make changes here - they may/will be overwritten.
+
+      Created: {{ lookup('pipe', 'date --utc --iso-8601=seconds') }}Z
+    disk: "{{ proxmox_volume_group }}:{{ virtual_machine_disksize }}"
+    hostname: "{{ virtual_machine_name }}"
+    memory: "{{ virtual_machine_memory }}"
+    mounts: "{{ omit if config_mounts | length == 0 else config_mount }}"
+    nameserver: "{{ virtual_machine_nameserver }}"
+    netif: "{{ config_net | replace(' ', '') | replace('\":\"n', '\" : \"n') | trim }}"
+    node: "{{ proxmox_api_host }}"
+    onboot: "{{ virtual_machine_start }}"
+    ostemplate: "{{ config_ostemplate }}"
+    password: "{{ virtual_machine_password }}"
+    pubkey: "{{ omit if ssh_keys | length == 0 else ssh_keys }}"
+    searchdomain: "{{ virtual_machine_searchdomain }}"
+    storage: "{{ proxmox_volume_group }}"
+    swap: "{{ virtual_machine_swap }}"
+    unprivileged: "{{ virtual_machine_unprivileged }}"
+    vmid: "{{ omit if virtual_machine_id == 'auto' else virtual_machine_id }}"
+  register: vm
+  failed_when:
+    - vm.msg != ("Deployed VM " + (vm.vmid if virtual_machine_id == 'auto' else virtual_machine_id) | string + " from template " + config_ostemplate)
+
+- name: "{{ 'Determine PVE ID of virtual machine \"' + virtual_machine_name + '\"' }}"
+  ansible.builtin.set_fact:
+    pve_id: "{{ (vm.vmid if virtual_machine_id == 'auto' else virtual_machine_id) | string }}"
+
+- name: "{{ 'Update container ' + pve_id + ' features' }}"
+  ansible.builtin.command:
+    cmd: "pct set {{ pve_id }} -features {{ virtual_machine_features | join(',') }}"
+  delegate_to: "{{ proxmox_api_host }}"
+  register: results
+  changed_when: true
+
+- name: "{{ 'Start and initialize virtual machine ' + pve_id }}"
+  community.general.proxmox:
+    api_host: "{{ proxmox_api_host }}"
+    api_password: "{{ proxmox_api_password }}"
+    api_user: "{{ proxmox_api_user }}"
+    node: "{{ proxmox_api_host }}"
+    state: started
+    vmid: "{{ pve_id }}"
+  register: result
+  failed_when:
+    - result.msg != ("VM " + pve_id | string + " started")
