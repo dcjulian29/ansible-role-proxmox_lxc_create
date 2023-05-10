@@ -32,6 +32,7 @@
     state: present
     storage: "{{ proxmox_template_storage }}"
     template: "{{ proxmox_template_name }}"
+  delegate_to: "{{ proxmox_api_host }}"
 
 - name: "{{ 'Create container named \"' + virtual_machine_name + '\"' }}"
   community.general.proxmox:
@@ -64,10 +65,12 @@
   register: vm
   failed_when:
     - vm.msg != ("Deployed VM " + (vm.vmid if virtual_machine_id == 'auto' else virtual_machine_id) | string + " from template " + config_ostemplate)
+  delegate_to: "{{ proxmox_api_host }}"
 
 - name: "{{ 'Determine PVE ID of virtual machine \"' + virtual_machine_name + '\"' }}"
   ansible.builtin.set_fact:
     pve_id: "{{ (vm.vmid if virtual_machine_id == 'auto' else virtual_machine_id) | string }}"
+  delegate_to: "{{ proxmox_api_host }}"
 
 - name: "{{ 'Update container ' + pve_id + ' features' }}"
   ansible.builtin.command:
@@ -87,3 +90,4 @@
   register: result
   failed_when:
     - result.msg != ("VM " + pve_id | string + " started")
+  delegate_to: "{{ proxmox_api_host }}"
