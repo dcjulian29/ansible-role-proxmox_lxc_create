@@ -1,21 +1,21 @@
 ---
 ## Provided by Playbook
 
-proxmox_api_host: "" # Provided by Playbook
-proxmox_api_user: "" # Provided by Playbook
-proxmox_api_password: "" # Provided by Playbook
-proxmox_network_lan: "" # Provided by Playbook
-virtual_machine_cores: 2 # Provided by Playbook
-virtual_machine_id: auto # Provided by Playbook
-virtual_machine_memory: 2048 # Provided by Playbook
-virtual_machine_name: "testvm" # Provided by Playbook
-virtual_machine_password: "ubuntu" # Provided by Playbook
+proxmox_api_host: ""
+proxmox_api_user: ""
+proxmox_api_password: ""
+proxmox_network_lan: ""
+virtual_machine_cores: 2
+virtual_machine_id: auto
+virtual_machine_memory: 2048
+virtual_machine_name: testvm
+virtual_machine_password: debian
 
 ## Other, may be overridden in Playbook
 
 proxmox_volume_group: mpio
 proxmox_template_url: ""
-proxmox_template_name: "ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+proxmox_template_name: debian-12-standard_12.0-1_amd64.tar.zst
 proxmox_template_storage: nas
 proxmox_template_type: vztmpl
 virtual_machine_disksize: 8
