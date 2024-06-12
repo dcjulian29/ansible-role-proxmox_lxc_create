@@ -5,7 +5,7 @@ galaxy_info:
   author: Julian Easterling
   description: Ansible role to create LXC containers in Proxmox.
   license: APACHE
-  min_ansible_version: "2.14.1"
+  min_ansible_version: "2.16.7"
   galaxy_tags:
     - proxmox
     - pve

@@ -34,6 +34,47 @@
     template: "{{ proxmox_template_name }}"
   delegate_to: "{{ proxmox_api_host }}"
 
+- name: "{{ ('Grab ID of existing container \"' + virtual_machine_name + '\"') }}"
+  community.general.proxmox_vm_info:
+    api_host: "{{ proxmox_api_host }}"
+    api_password: "{{ proxmox_api_password }}"
+    api_user: "{{ proxmox_api_user }}"
+    config: current
+    name: "{{ virtual_machine_name }}"
+    node: "{{ proxmox_api_host }}"
+    type: lxc
+  changed_when: false
+  failed_when: false
+  register: vme
+  delegate_to: "{{ proxmox_api_host }}"
+
+- name: "{{ ('Stop existing container named \"' + virtual_machine_name + '\"') }}"
+  community.general.proxmox:
+    api_host: "{{ proxmox_api_host }}"
+    api_password: "{{ proxmox_api_password }}"
+    api_user: "{{ proxmox_api_user }}"
+    node: "{{ proxmox_api_host }}"
+    state: stopped
+    vmid: "{{ vme.proxmox_vms[0].vmid }}"
+  when:
+    - vme.proxmox_vms[0] is defined
+    - vme.proxmox_vms[0].vmid > 0
+    - vme.proxmox_vms[0].status == "running"
+  delegate_to: "{{ proxmox_api_host }}"
+
+- name: "{{ ('Remove existing container named \"' + virtual_machine_name + '\"') }}"
+  community.general.proxmox:
+    api_host: "{{ proxmox_api_host }}"
+    api_password: "{{ proxmox_api_password }}"
+    api_user: "{{ proxmox_api_user }}"
+    node: "{{ proxmox_api_host }}"
+    state: absent
+    vmid: "{{ vme.proxmox_vms[0].vmid }}"
+  when:
+    - vme.proxmox_vms[0] is defined
+    - vme.proxmox_vms[0].vmid > 0
+  delegate_to: "{{ proxmox_api_host }}"
+
 - name: "{{ 'Create container named \"' + virtual_machine_name + '\"' }}"
   community.general.proxmox:
     api_user: "{{ proxmox_api_user }}"
