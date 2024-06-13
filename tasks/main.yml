@@ -21,7 +21,9 @@
   when:
     - proxmox_template_url | length > 0
 
-- name: "{{ 'Add LXC container template \"' + proxmox_template_name + '\" to ' + proxmox_api_host + ' if needed' }}"
+- name: >-
+    {{ 'Add LXC container template \"' + proxmox_template_name + '\" to '
+    + proxmox_api_host + ' if needed' }}
   community.general.proxmox_template:
     api_host: "{{ proxmox_api_host }}"
     api_password: "{{ proxmox_api_password }}"
@@ -105,7 +107,9 @@
     vmid: "{{ omit if virtual_machine_id == 'auto' else virtual_machine_id }}"
   register: vm
   failed_when:
-    - vm.msg != ("Deployed VM " + (vm.vmid if virtual_machine_id == 'auto' else virtual_machine_id) | string + " from template " + config_ostemplate)
+    - >-
+        vm.msg != ("Deployed VM " + (vm.vmid if virtual_machine_id == 'auto' else virtual_machine_id)
+        | string + " from template " + config_ostemplate)
   delegate_to: "{{ proxmox_api_host }}"
 
 - name: "{{ 'Determine PVE ID of virtual machine \"' + virtual_machine_name + '\"' }}"
