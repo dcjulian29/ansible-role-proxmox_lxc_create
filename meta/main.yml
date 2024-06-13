@@ -1,18 +1,18 @@
 ---
+dependencies: []
 galaxy_info:
-  role_name: proxmox_lxc_create
-  namespace: dcjulian29
   author: Julian Easterling
   description: Ansible role to create LXC containers in Proxmox.
-  license: APACHE
-  min_ansible_version: "2.16.7"
   galaxy_tags:
     - proxmox
     - pve
     - container
     - lxc
+  license: Apache-2.0
+  min_ansible_version: "2.16.7"
+  namespace: dcjulian29
   platforms:
     - name: Debian
       versions:
         - bullseye
-dependencies: []
+  role_name: proxmox_lxc_create
