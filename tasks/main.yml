@@ -57,12 +57,14 @@
     api_user: "{{ proxmox_api_user }}"
     node: "{{ proxmox_api_host }}"
     state: stopped
+    timeout: 600
     vmid: "{{ vme.proxmox_vms[0].vmid }}"
   when:
     - vme.proxmox_vms[0] is defined
     - vme.proxmox_vms[0].vmid > 0
     - vme.proxmox_vms[0].status == "running"
   delegate_to: "{{ proxmox_api_host }}"
+
 
 - name: "{{ ('Remove existing container named \"' + virtual_machine_name + '\"') }}"
   community.general.proxmox:
@@ -101,7 +103,6 @@
     password: "{{ virtual_machine_password }}"
     pubkey: "{{ omit if ssh_keys | length == 0 else ssh_keys }}"
     searchdomain: "{{ virtual_machine_searchdomain }}"
-    storage: "{{ proxmox_volume_group }}"
     swap: "{{ virtual_machine_swap }}"
     unprivileged: "{{ virtual_machine_unprivileged }}"
     vmid: "{{ omit if virtual_machine_id == 'auto' else virtual_machine_id }}"
