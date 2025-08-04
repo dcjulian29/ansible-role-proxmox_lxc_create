@@ -15,7 +15,7 @@ virtual_machine_password: debian
 
 proxmox_volume_group: mpio
 proxmox_template_url: ""
-proxmox_template_name: debian-12-standard_12.2-1_amd64.tar.zst
+proxmox_template_name: debian-12-standard_12.7-1_amd64.tar.zst
 proxmox_template_storage: nas
 proxmox_template_type: vztmpl
 virtual_machine_disksize: 8
