@@ -32,13 +32,13 @@ virtual_machine_mounts: []
   #   quota: false                   # Optional.
   #   read_only: false               # Optional.
   #   skip_replication: false        # Optional.
-virtual_machine_nameserver: "{{ vars[proxmox_network_lan].dnsservers }}"
+virtual_machine_nameserver: "{{ networks[proxmox_network_lan].dnsservers }}"
 virtual_machine_network:
   - id: net0
     name: eth0
     ip4: "ip={{ 'dhcp' if virtual_machine_id == 'auto' else config_ip4 }}"
-    ip6: "{{ '' if not vars[proxmox_network_lan].ip6 else config_ip6 }}"
-virtual_machine_searchdomain: "{{ vars[proxmox_network_lan].searchdomain }}"
+    ip6: "{{ '' if not networks[proxmox_network_lan].ip6 else config_ip6 }}"
+virtual_machine_searchdomain: "{{ networks[proxmox_network_lan].searchdomain }}"
 virtual_machine_start: true
 virtual_machine_swap: 512
 virtual_machine_unprivileged: false
@@ -46,11 +46,11 @@ virtual_machine_unprivileged: false
 ## Computed Values
 
 config_ip4: >-
-    {{ virtual_machine_ip4 + '/' + vars[proxmox_network_lan].ip4_netmask
-    | string + ',gw=' + vars[proxmox_network_lan].ip4_gateway }}
+    {{ virtual_machine_ip4 + '/' + networks[proxmox_network_lan].ip4_netmask
+    | string + ',gw=' + networks[proxmox_network_lan].ip4_gateway }}
 config_ip6: >-
-  ip6={{ virtual_machine_ip6 }}/{{ vars[proxmox_network_lan].ip6_netmask
-  | string }},gw6={{ vars[proxmox_network_lan].ip6_gateway }}
+  ip6={{ virtual_machine_ip6 }}/{{ networks[proxmox_network_lan].ip6_netmask
+  | string }},gw6={{ networks[proxmox_network_lan].ip6_gateway }}
 config_mounts: >-
   { {%- for item in virtual_machine_mounts -%}
   "{{ item.id }}":"{{ item.storage }}:{{ item.size }},mp={{ item.mount_point }}
@@ -62,16 +62,16 @@ config_mounts: >-
   {%- endfor -%} }
 config_net: >-
   { {%- for item in virtual_machine_network -%}
-  "{{ item.id }}":"name={{ item.name }},bridge=vmbr{{ vars[proxmox_network_lan].vmbr }},
+  "{{ item.id }}":"name={{ item.name }},bridge=vmbr{{ networks[proxmox_network_lan].vmbr }},
   {% if (item.ip4 is defined) %}{{ item.ip4 }},{% endif %}
   {% if (item.ip6 | length > 0) %}{{ item.ip6 }},{% endif %}
-  tag={{ vars[proxmox_network_lan].tag }}"
+  tag={{ networks[proxmox_network_lan].tag }}"
   {%- endfor -%} }
 config_ostemplate: "{{ proxmox_template_storage }}:{{ proxmox_template_type }}/{{ proxmox_template_name }}"
 ssh_keys: "{{ lookup('ansible.builtin.file', 'sshpub/' + virtual_machine_name + '.key.pub', errors='ignore') }}"
 virtual_machine_hex: "{{ '%04x' | format((virtual_machine_int | int * virtual_machine_int | int) | int) }}"
 virtual_machine_int: "{{ 1 if virtual_machine_id == 'auto' else (virtual_machine_id | string)[-3:] | int }}"
-virtual_machine_ip4: "{{ vars[proxmox_network_lan].ip4_prefix }}.{{ virtual_machine_int }}"
+virtual_machine_ip4: "{{ networks[proxmox_network_lan].ip4_prefix }}.{{ virtual_machine_int }}"
 virtual_machine_ip6: >-
-    {{ '' if not vars[proxmox_network_lan].ip6 else vars[proxmox_network_lan].ip6_prefix + '::'
+    {{ '' if not networks[proxmox_network_lan].ip6 else networks[proxmox_network_lan].ip6_prefix + '::'
     + virtual_machine_hex }}
