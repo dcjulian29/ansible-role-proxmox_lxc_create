@@ -5,11 +5,18 @@
     state: present
   delegate_to: "{{ proxmox_api_host }}"
 
+- name: Determine whether pip on the Proxmox node supports --break-system-packages
+  ansible.builtin.command:
+    cmd: python3 -m pip install --help
+  register: proxmox_pip_help
+  changed_when: false
+  delegate_to: "{{ proxmox_api_host }}"
+
 - name: Ensure proxmoxer (>= 2.3) pip module is installed on the Proxmox node
   ansible.builtin.pip:
     name: "proxmoxer>=2.3"
     state: present
-    extra_args: "--break-system-packages"
+    extra_args: "{{ '--break-system-packages' if '--break-system-packages' in proxmox_pip_help.stdout else omit }}"
   delegate_to: "{{ proxmox_api_host }}"
 
 - name: Download the container template if it needed
@@ -26,7 +33,7 @@
     {{ 'Add LXC container template \"' + proxmox_template_name + '\" to '
     + proxmox_api_host + ' if needed' }}
   community.proxmox.proxmox_template:
-    api_host: "{{ proxmox_api_host }}"
+    api_host: "{{ proxmox_api_endpoint }}"
     api_password: "{{ proxmox_api_password }}"
     api_user: "{{ proxmox_api_user }}"
     content_type: "{{ proxmox_template_type }}"
@@ -39,7 +46,7 @@
 
 - name: "{{ ('Grab ID of existing container \"' + virtual_machine_name + '\"') }}"
   community.proxmox.proxmox_vm_info:
-    api_host: "{{ proxmox_api_host }}"
+    api_host: "{{ proxmox_api_endpoint }}"
     api_password: "{{ proxmox_api_password }}"
     api_user: "{{ proxmox_api_user }}"
     config: current
@@ -52,7 +59,7 @@
 
 - name: "{{ ('Stop existing container named \"' + virtual_machine_name + '\"') }}"
   community.proxmox.proxmox:
-    api_host: "{{ proxmox_api_host }}"
+    api_host: "{{ proxmox_api_endpoint }}"
     api_password: "{{ proxmox_api_password }}"
     api_user: "{{ proxmox_api_user }}"
     node: "{{ proxmox_api_host }}"
@@ -61,14 +68,14 @@
     vmid: "{{ vme.proxmox_vms[0].vmid }}"
   when:
     - vme.proxmox_vms[0] is defined
-    - vme.proxmox_vms[0].vmid > 0
+    - (vme.proxmox_vms[0].vmid | int) > 0
     - vme.proxmox_vms[0].status == "running"
   delegate_to: "{{ proxmox_api_host }}"
 
 
 - name: "{{ ('Remove existing container named \"' + virtual_machine_name + '\"') }}"
   community.proxmox.proxmox:
-    api_host: "{{ proxmox_api_host }}"
+    api_host: "{{ proxmox_api_endpoint }}"
     api_password: "{{ proxmox_api_password }}"
     api_user: "{{ proxmox_api_user }}"
     node: "{{ proxmox_api_host }}"
@@ -76,14 +83,14 @@
     vmid: "{{ vme.proxmox_vms[0].vmid }}"
   when:
     - vme.proxmox_vms[0] is defined
-    - vme.proxmox_vms[0].vmid > 0
+    - (vme.proxmox_vms[0].vmid | int) > 0
   delegate_to: "{{ proxmox_api_host }}"
 
 - name: "{{ 'Create container named \"' + virtual_machine_name + '\"' }}"
   community.proxmox.proxmox:
     api_user: "{{ proxmox_api_user }}"
     api_password: "{{ proxmox_api_password }}"
-    api_host: "{{ proxmox_api_host }}"
+    api_host: "{{ proxmox_api_endpoint }}"
     cores: "{{ virtual_machine_cores }}"
     description: |-
       # This container is managed by Ansible
@@ -105,6 +112,7 @@
     searchdomain: "{{ virtual_machine_searchdomain }}"
     swap: "{{ virtual_machine_swap }}"
     unprivileged: "{{ virtual_machine_unprivileged }}"
+    timeout: "{{ virtual_machine_create_timeout }}"
     vmid: "{{ omit if virtual_machine_id == 'auto' else virtual_machine_id }}"
   register: vm
   failed_when: >-
@@ -126,7 +134,7 @@
 
 - name: "{{ 'Start and initialize virtual machine ' + pve_id }}"
   community.proxmox.proxmox:
-    api_host: "{{ proxmox_api_host }}"
+    api_host: "{{ proxmox_api_endpoint }}"
     api_password: "{{ proxmox_api_password }}"
     api_user: "{{ proxmox_api_user }}"
     node: "{{ proxmox_api_host }}"

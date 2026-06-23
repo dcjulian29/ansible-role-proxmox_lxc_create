@@ -2,6 +2,9 @@
 ## Provided by Playbook
 
 proxmox_api_host: ""
+# Host used for the API connection / TLS verification. Defaults to the node
+# name; override with the FQDN when the API certificate uses one.
+proxmox_api_endpoint: "{{ proxmox_api_host }}"
 proxmox_api_user: ""
 proxmox_api_password: ""
 proxmox_network_lan: ""
@@ -19,6 +22,8 @@ proxmox_template_name: debian-12-standard_12.7-1_amd64.tar.zst
 proxmox_template_storage: nas
 proxmox_template_type: vztmpl
 virtual_machine_disksize: 8
+# Seconds to wait for the create task (template extraction) before giving up.
+virtual_machine_create_timeout: 300
 virtual_machine_features:
   - mount=cifs;nfs
   - nesting={{ 1 if virtual_machine_unprivileged else 0 }}
