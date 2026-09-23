@@ -13,17 +13,19 @@
   delegate_to: "{{ proxmox_api_host }}"
 
 - name: Determine whether pip on the Proxmox node supports --break-system-packages
-  ansible.builtin.command:
-    cmd: python3 -m pip install --help
-  register: proxmox_pip_help
+  ansible.builtin.shell:
+    cmd: set -o pipefail && python3 -m pip install --help | grep -q -- --break-system-packages
+    executable: /bin/bash
+  register: proxmox_pip_break_system
   changed_when: false
+  failed_when: proxmox_pip_break_system.rc not in [0, 1]
   delegate_to: "{{ proxmox_api_host }}"
 
 - name: Ensure proxmoxer (>= 2.3) pip module is installed on the Proxmox node
   ansible.builtin.pip:
     name: "proxmoxer>=2.3"
     state: present
-    extra_args: "{{ '--break-system-packages' if '--break-system-packages' in proxmox_pip_help.stdout else omit }}"
+    extra_args: "{{ '--break-system-packages' if proxmox_pip_break_system.rc == 0 else omit }}"
   delegate_to: "{{ proxmox_api_host }}"
 
 - name: Download the container template if it needed
